@@ -1,0 +1,23 @@
+{
+  "name": "discordpomodoro",
+  "version": "1.0.0",
+  "description": "## For what ?",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SAMPAIOAlexandre/DiscordPomodoro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SAMPAIOAlexandre/DiscordPomodoro/issues"
+  },
+  "homepage": "https://github.com/SAMPAIOAlexandre/DiscordPomodoro#readme",
+  "dependencies": {
+    "discord.js": "^14.17.3"
+  }
+}
