@@ -19,6 +19,7 @@ const commandsPath = path.join(__dirname, 'commands');
 const commandFolders = await readdir(commandsPath);
 
 for (const folder of commandFolders) {
+	if (folder === 'utils') continue;
 	const commandsFolder = path.join(commandsPath, folder);
 	const commandFiles = await readdir(commandsFolder);
 

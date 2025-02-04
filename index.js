@@ -1,8 +1,10 @@
+// @ts-nocheck
 import 'dotenv/config';
 import { Client, Events, GatewayIntentBits, Collection } from 'discord.js';
 import { readdir } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { startPomodoro, activeTimers } from './commands/utils/pomodoroTimer.js';
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -10,7 +12,7 @@ const token = process.env.DISCORD_TOKEN;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates] });
 
 client.commands = new Collection();
 
@@ -20,6 +22,7 @@ const commandFolders = await readdir(commandsPath);
 
 // loop for loading of all commands in the commands folder
 for (const folder of commandFolders) {
+	if (folder === 'utils') continue;
 	const commandsFolder = path.join(commandsPath, folder);
 	const commandFiles = await readdir(commandsFolder);
 
@@ -50,6 +53,31 @@ client.on(Events.InteractionCreate, async interaction => {
 	catch (error) {
 		console.error(error);
 		await interaction.reply({ content: 'Erreur lors de l\'exécution de la commande.', ephemeral: true });
+	}
+});
+
+client.on('voiceStateUpdate', async (oldState, newState) => {
+	const user = newState.member;
+	const channel = newState.channel;
+	const oldChannel = oldState.channel;
+
+	if (channel && channel.name.startsWith('Pomodoro')) {
+		console.log(`🎯 ${user.user.username} a rejoint ${channel.name}`);
+
+		if (!activeTimers.has(channel.id)) {
+			startPomodoro(channel);
+		}
+	}
+
+	if (oldChannel && oldChannel.name.startsWith('Pomodoro')) {
+		setTimeout(async () => {
+			if (oldChannel.members.size === 0) {
+				console.log('🚫 Nobody on channel timer go for 0');
+				clearInterval(activeTimers.get(oldChannel.id));
+				activeTimers.delete(oldChannel.id);
+				await oldChannel.setName(oldChannel.name.split(' - ')[0]);
+			}
+		}, 5000);
 	}
 });
 
