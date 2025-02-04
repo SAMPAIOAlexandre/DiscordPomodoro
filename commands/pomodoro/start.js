@@ -1,3 +1,5 @@
+// This components is for the slash command /start that creates a new voice channel for a pomodoro session.
+
 import { SlashCommandBuilder, ChannelType } from 'discord.js';
 
 export default {
