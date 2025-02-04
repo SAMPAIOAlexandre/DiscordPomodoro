@@ -1,47 +1,64 @@
-// This components is for the slash command /start that creates a new voice channel for a pomodoro session.
+// Slash command /start that creates a new voice channel for a Pomodoro session.
 
-import { SlashCommandBuilder, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChannelType, PermissionsBitField } from 'discord.js';
 
 export default {
-	data : new SlashCommandBuilder()
+	data: new SlashCommandBuilder()
 		.setName('start')
 		.setDescription('Start a new pomodoro session with desired time.')
 		.addIntegerOption(option =>
 			option.setName('duration')
 				.setDescription('The time in minutes for the pomodoro session.')
-				.setRequired(true))
+				.setRequired(true),
+		)
 		.addIntegerOption(option =>
 			option.setName('break')
 				.setDescription('Time of break in minutes.')
 				.setRequired(true),
 		),
 	async execute(interaction) {
-		const duration = interaction.options.getInteger('duration');
-		const breakDuration = interaction.options.getInteger('break');
-		const guild = interaction.guild;
-		const category = guild.channels.cache.find(c => c.name === 'Sessions Pomodoro' && c.type === ChannelType.GuildCategory);
+		try {
+			const duration = interaction.options.getInteger('duration');
+			const breakDuration = interaction.options.getInteger('break');
+			const guild = interaction.guild;
+			const categoryName = `Pomodoro ${duration}/${breakDuration}`;
 
-		if (!category) {
-			await interaction.reply('The category "Sessions Pomodoro" does not exist. Please create it first.');
-			return;
+			// Check if the category exists
+			const category = guild.channels.cache.find(
+				c => c.name === categoryName && c.type === ChannelType.GuildCategory,
+			);
+
+			if (!category) {
+				await interaction.reply(`⚠️ The category **${categoryName}** does not exist. Please run \`/setup\` first.`);
+				return;
+			}
+
+			//  Check how many channels are in the category
+			const existingChannelCount = guild.channels.cache
+				.filter(channel => channel.parentId === category.id)
+				.size;
+
+			// Create a unique name for the new channel
+			const newChannelName = `Pomodoro ${duration}/${breakDuration} #${existingChannelCount + 1}`;
+
+			// Creating the new channel
+			const newChannel = await guild.channels.create({
+				name: newChannelName,
+				type: ChannelType.GuildVoice,
+				parent: category.id,
+				permissionOverwrites: [
+					{
+						id: guild.roles.everyone.id,
+						deny: [PermissionsBitField.Flags.ViewChannel],
+					},
+				],
+			});
+
+			await interaction.reply(`✅ Pomodoro session created: **${newChannel.name}** in **${categoryName}**. Join to start!`);
 		}
-		const existingChannel = guild.channels.cache
-			.filter (channel => channel.name.startsWith(`Pomodoro ${duration}/${breakDuration}`))
-			.size;
-
-		const newChannelName = `Pomodoro ${duration}/${breakDuration} #${existingChannel + 1}`;
-
-		const newChannel = await guild.channels.create({
-			name : newChannelName,
-			type: ChannelType.GuildVoice,
-			parent: category.id,
-			permissionOverwrites: [
-				{
-					id: guild.roles.everyone.id,
-					deny: ['VIEW_CHANNEL'],
-				},
-			],
-		});
-		await interaction.reply(`Pomodoro session created in ${newChannel}`);
+		catch (error) {
+			console.error('❌ Erreur dans /start :', error);
+			await interaction.reply({ content: '❌ An error occurred while executing this command.', ephemeral: true });
+		}
 	},
 };

@@ -22,6 +22,5 @@ export default {
 			}
 		}
 		await interaction.reply('All the categories have been created.');
-
 	},
 };
