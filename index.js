@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 
 const token = process.env.DISCORD_TOKEN;
 
-// Fix pour __dirname with ESM
+// Fix for __dirname with ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
