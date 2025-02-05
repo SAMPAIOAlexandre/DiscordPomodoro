@@ -1,6 +1,7 @@
 // Slash command /start that creates a new voice channel for a Pomodoro session.
 
 import { SlashCommandBuilder, ChannelType, PermissionsBitField } from 'discord.js';
+import { originalChannelNames } from '../utils/pomodoroTimer.js';
 
 export default {
 	data: new SlashCommandBuilder()
@@ -33,7 +34,7 @@ export default {
 				return;
 			}
 
-			//  Check how many channels are in the category
+			// Check how many channels are in the category
 			const existingChannelCount = guild.channels.cache
 				.filter(channel => channel.parentId === category.id)
 				.size;
@@ -53,6 +54,9 @@ export default {
 					},
 				],
 			});
+
+			// Saving the original name for reset
+			originalChannelNames.set(newChannel.id, newChannel.name);
 
 			await interaction.reply(`✅ Pomodoro session created: **${newChannel.name}** in **${categoryName}**. Join to start!`);
 		}

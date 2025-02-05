@@ -4,7 +4,7 @@ import { Client, Events, GatewayIntentBits, Collection } from 'discord.js';
 import { readdir } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { startPomodoro, activeTimers } from './commands/utils/pomodoroTimer.js';
+import { startPomodoro, activeTimers, originalChannelNames } from './commands/utils/pomodoroTimer.js';
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -72,17 +72,30 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 	if (oldChannel && oldChannel.name.startsWith('Pomodoro')) {
 		setTimeout(async () => {
 			if (oldChannel.members.size === 0) {
-				console.log('🚫 Nobody on channel timer go for 0');
-				clearInterval(activeTimers.get(oldChannel.id));
-				activeTimers.delete(oldChannel.id);
-				await oldChannel.setName(oldChannel.name.split(' - ')[0]);
+				console.log(`🚫 Salon vide, réinitialisation de ${oldChannel.name}`);
+
+				//  Stop timer before renaming
+				if (activeTimers.has(oldChannel.id)) {
+					clearInterval(activeTimers.get(oldChannel.id));
+					activeTimers.delete(oldChannel.id);
+					console.log(`🛑 Timer arrêté pour ${oldChannel.name}`);
+				}
+
+				//  Recuperation of the original name
+				const originalName = originalChannelNames.get(oldChannel.id) || oldChannel.name;
+
+				console.log(`🔄 Nouveau nom après reset : ${originalName}`);
+				await oldChannel.setName(originalName);
+
+				//  Deleting the original name after renaming
+				originalChannelNames.delete(oldChannel.id);
 			}
 		}, 5000);
 	}
 });
 
 client.once(Events.ClientReady, (readyClient) => {
-	console.log(`✅ Bot prêt et connecté en tant que ${readyClient.user.tag}`);
+	console.log(`✅ Bot ready and connected ${readyClient.user.tag}`);
 });
 
 client.login(token);

@@ -2,6 +2,7 @@ import { createCanvas } from 'canvas';
 
 
 const activeTimers = new Map();
+const originalChannelNames = new Map();
 
 
 async function generateTimerImage(percentage) {
@@ -37,7 +38,7 @@ async function generateTimerImage(percentage) {
 }
 
 export async function startPomodoro(channel) {
-	console.log(`✅ startPomodoro() exécuté pour ${channel.name}`); // Debug 1
+	console.log(`✅ startPomodoro() exécuté pour ${channel.name}`);
 
 	const match = channel.name.match(/Pomodoro (\d+)\/(\d+)/);
 	if (!match) return console.log('⚠️ Erreur : Impossible de lire la durée du Pomodoro');
@@ -47,7 +48,7 @@ export async function startPomodoro(channel) {
 	let remainingTime = duration * 60;
 	const totalTime = duration * 60;
 
-	console.log(`🔍 Durée Pomodoro : ${duration} min | Pause : ${breakDuration} min`); // Debug 2
+	console.log(`🔍 Durée Pomodoro : ${duration} min | Pause : ${breakDuration} min`);
 
 	channel.members.forEach(member => {
 		member.voice.setMute(true, 'Début du Pomodoro');
@@ -56,7 +57,7 @@ export async function startPomodoro(channel) {
 	activeTimers.set(channel.id, setInterval(async () => {
 		remainingTime -= 60;
 		const percentage = Math.floor(((totalTime - remainingTime) / totalTime) * 100);
-		console.log(`⏳ ${percentage}% complété (${remainingTime / 60} min restantes)`); // Debug 3
+		console.log(`⏳ ${percentage}% complété (${remainingTime / 60} min restantes)`);
 
 		if (remainingTime <= 0) {
 			clearInterval(activeTimers.get(channel.id));
@@ -71,3 +72,4 @@ export async function startPomodoro(channel) {
 }
 
 export { activeTimers };
+export { originalChannelNames };
