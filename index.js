@@ -74,21 +74,34 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 			if (oldChannel.members.size === 0) {
 				console.log(`🚫 Salon vide, réinitialisation de ${oldChannel.name}`);
 
-				//  Stop timer before renaming
+				// 🛑 STOPPER LE TIMER
 				if (activeTimers.has(oldChannel.id)) {
 					clearInterval(activeTimers.get(oldChannel.id));
 					activeTimers.delete(oldChannel.id);
 					console.log(`🛑 Timer arrêté pour ${oldChannel.name}`);
 				}
 
-				//  Recuperation of the original name
-				const originalName = originalChannelNames.get(oldChannel.id) || oldChannel.name;
+				console.log(`🔎 Recherche du nom original pour ID: ${oldChannel.id}`);
+				console.log('📌 Contenu actuel de originalChannelNames :', originalChannelNames);
 
-				console.log(`🔄 Nouveau nom après reset : ${originalName}`);
-				await oldChannel.setName(originalName);
+				// ✅ Récupérer le NOM ORIGINAL STOCKÉ avec l'ID
+				if (originalChannelNames.has(oldChannel.id)) {
+					let originalName = originalChannelNames.get(oldChannel.id);
+					console.log(`✅ Nom original retrouvé : ${originalName} pour ${oldChannel.name}`);
 
-				//  Deleting the original name after renaming
-				originalChannelNames.delete(oldChannel.id);
+					// 🔍 Extraire le numéro (#1, #2, ...) s'il existe
+					const match = oldChannel.name.match(/#\d+$/);
+					const channelNumber = match ? match[0] : '';
+
+					// 🔄 Réappliquer le numéro s'il existait
+					originalName = `${originalName} ${channelNumber}`.trim();
+
+					await oldChannel.setName(originalName);
+					originalChannelNames.delete(oldChannel.id);
+				}
+				else {
+					console.log(`⚠️ Nom original introuvable pour ${oldChannel.name}. La Map contient actuellement :`, originalChannelNames);
+				}
 			}
 		}, 5000);
 	}

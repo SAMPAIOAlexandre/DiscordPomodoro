@@ -1,9 +1,9 @@
+// utils/pomodoroTimer.js
 import { createCanvas } from 'canvas';
 
-
+// 🛑 Assurer que la Map est définie globalement
 const activeTimers = new Map();
 const originalChannelNames = new Map();
-
 
 async function generateTimerImage(percentage) {
 	const width = 256;
@@ -54,6 +54,12 @@ export async function startPomodoro(channel) {
 		member.voice.setMute(true, 'Début du Pomodoro');
 	});
 
+	// 📝 Stocker le nom original si ce n'est pas déjà fait
+	if (!originalChannelNames.has(channel.id)) {
+		originalChannelNames.set(channel.id, channel.name);
+		console.log(`📝 Stockage du nom original (après vérification) : ${channel.name} (ID: ${channel.id})`);
+	}
+
 	activeTimers.set(channel.id, setInterval(async () => {
 		remainingTime -= 60;
 		const percentage = Math.floor(((totalTime - remainingTime) / totalTime) * 100);
@@ -71,5 +77,4 @@ export async function startPomodoro(channel) {
 	}, 60000));
 }
 
-export { activeTimers };
-export { originalChannelNames };
+export { activeTimers, originalChannelNames };

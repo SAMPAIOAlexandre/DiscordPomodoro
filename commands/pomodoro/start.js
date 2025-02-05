@@ -55,8 +55,9 @@ export default {
 				],
 			});
 
-			// Saving the original name for reset
+			// Saving the original name for reset using the channel ID
 			originalChannelNames.set(newChannel.id, newChannel.name);
+			console.log(`📝 Stockage du nom original : ${newChannel.name} (ID: ${newChannel.id})`);
 
 			await interaction.reply(`✅ Pomodoro session created: **${newChannel.name}** in **${categoryName}**. Join to start!`);
 		}
