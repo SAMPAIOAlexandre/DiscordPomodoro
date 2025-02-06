@@ -34,6 +34,7 @@ export default {
 				return;
 			}
 
+
 			// Check how many channels are in the category
 			const existingChannelCount = guild.channels.cache
 				.filter(channel => channel.parentId === category.id)
@@ -41,6 +42,13 @@ export default {
 
 			// Create a unique name for the new channel
 			const newChannelName = `Pomodoro ${duration}/${breakDuration} #${existingChannelCount + 1}`;
+
+			for (const [key, value] of originalChannelNames.entries()) {
+				if (value === newChannelName) {
+					console.log(`🗑️ Suppression de l'ancien enregistrement du salon ${value} (ID: ${key})`);
+					originalChannelNames.delete(key);
+				}
+			}
 
 			// Creating the new channel
 			const newChannel = await guild.channels.create({

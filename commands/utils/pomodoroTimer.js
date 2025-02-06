@@ -38,43 +38,91 @@ async function generateTimerImage(percentage) {
 }
 
 export async function startPomodoro(channel) {
-	console.log(`✅ startPomodoro() exécuté pour ${channel.name}`);
+	console.log(`✅ Démarrage du cycle Pomodoro pour ${channel.name}`);
 
 	const match = channel.name.match(/Pomodoro (\d+)\/(\d+)/);
 	if (!match) return console.log('⚠️ Erreur : Impossible de lire la durée du Pomodoro');
 
-	const duration = parseInt(match[1]);
-	const breakDuration = parseInt(match[2]);
-	let remainingTime = duration * 60;
-	const totalTime = duration * 60;
+	const pomodoroDuration = parseInt(match[1]) * 60; // Pomodoro en secondes
+	const breakDuration = parseInt(match[2]) * 60; // Pause en secondes
 
-	console.log(`🔍 Durée Pomodoro : ${duration} min | Pause : ${breakDuration} min`);
+	const matchNumber = channel.name.match(/#\d+/);
+	const channelNumber = matchNumber ? matchNumber[0] : '#1';
 
-	channel.members.forEach(member => {
-		member.voice.setMute(true, 'Début du Pomodoro');
-	});
-
-	// 📝 Stocker le nom original si ce n'est pas déjà fait
 	if (!originalChannelNames.has(channel.id)) {
-		originalChannelNames.set(channel.id, channel.name);
-		console.log(`📝 Stockage du nom original (après vérification) : ${channel.name} (ID: ${channel.id})`);
+		originalChannelNames.set(channel.id, `Pomodoro ${match[1]}/${match[2]} ${channelNumber}`);
 	}
 
-	activeTimers.set(channel.id, setInterval(async () => {
-		remainingTime -= 60;
-		const percentage = Math.floor(((totalTime - remainingTime) / totalTime) * 100);
-		console.log(`⏳ ${percentage}% complété (${remainingTime / 60} min restantes)`);
+	async function runCycle() {
+		while (channel.members.size > 0) {
+			// 🟢 Phase Pomodoro
+			console.log(`🍅 Début du Pomodoro de ${match[1]} minutes`);
+			await updateChannelName(channel, match[1], channelNumber, 'Pomodoro');
 
-		if (remainingTime <= 0) {
-			clearInterval(activeTimers.get(channel.id));
-			activeTimers.delete(channel.id);
-			await channel.setName(`Pomodoro ${duration}/${breakDuration} - ✅ Terminé`);
+			await countdown(channel, pomodoroDuration);
+
+			if (channel.members.size === 0) break; // Si tout le monde part, on arrête ici
+
+			// 🟡 Phase Pause
+			console.log(`☕ Début de la pause de ${match[2]} minutes`);
+			await updateChannelName(channel, match[2], channelNumber, 'Pause');
+
+			await countdown(channel, breakDuration);
+
+			if (channel.members.size === 0) break; // Vérifier encore avant le prochain cycle
+
+			console.log('♻️ Reprise d\'un nouveau cycle Pomodoro');
 		}
-		else {
-			const minutesLeft = Math.floor(remainingTime / 60);
-			await channel.setName(`Pomodoro ${duration}/${breakDuration} - ${minutesLeft} min restantes`);
+
+		// 🛑 Personne dans le salon → Reset complet
+		if (channel.members.size === 0) {
+			console.log(`🚫 Plus personne dans ${channel.name}, arrêt du cycle.`);
+			stopTimer(channel);
 		}
-	}, 60000));
+	}
+
+	runCycle();
 }
 
-export { activeTimers, originalChannelNames };
+async function countdown(channel, duration) {
+	let remainingTime = duration;
+	while (remainingTime > 0 && channel.members.size > 0) {
+		await new Promise(resolve => setTimeout(resolve, 60000)); // Attendre 1 minute
+		remainingTime -= 60;
+		const minutesLeft = Math.floor(remainingTime / 60);
+
+		const matchNumber = channel.name.match(/#\d+/);
+		const channelNumber = matchNumber ? matchNumber[0] : '#1';
+
+		await updateChannelName(channel, minutesLeft, channelNumber, 'Pomodoro');
+	}
+}
+async function updateChannelName(channel, timeLeft, channelNumber, phase) {
+	const newName = `Pomodoro ${channelNumber} - ${phase}: ${timeLeft} min restantes`;
+	console.log(`🔄 Mise à jour du nom : ${newName}`);
+
+	await channel.setName(newName).catch(error => {
+		console.error(`❌ Erreur mise à jour du nom pour ${channel.name} :`, error);
+	});
+}
+
+export function stopTimer(channel) {
+	if (activeTimers.has(channel.id)) {
+		clearInterval(activeTimers.get(channel.id));
+		activeTimers.delete(channel.id);
+		console.log(`🛑 Timer arrêté pour ${channel.name}`);
+	}
+
+	if (originalChannelNames.has(channel.id)) {
+		const originalName = originalChannelNames.get(channel.id);
+		console.log(`🔄 Réinitialisation du nom : ${originalName}`);
+		channel.setName(originalName).catch(error => {
+			console.error('❌ Erreur lors du reset du nom :', error);
+		});
+
+		originalChannelNames.delete(channel.id);
+	}
+}
+
+
+export { activeTimers, originalChannelNames, countdown, updateChannelName, generateTimerImage };

@@ -4,7 +4,7 @@ import { Client, Events, GatewayIntentBits, Collection } from 'discord.js';
 import { readdir } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { startPomodoro, activeTimers, originalChannelNames } from './commands/utils/pomodoroTimer.js';
+import { startPomodoro, activeTimers, stopTimer } from './commands/utils/pomodoroTimer.js';
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -20,7 +20,6 @@ client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'commands');
 const commandFolders = await readdir(commandsPath);
 
-// loop for loading of all commands in the commands folder
 for (const folder of commandFolders) {
 	if (folder === 'utils') continue;
 	const commandsFolder = path.join(commandsPath, folder);
@@ -73,42 +72,16 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 		setTimeout(async () => {
 			if (oldChannel.members.size === 0) {
 				console.log(`🚫 Salon vide, réinitialisation de ${oldChannel.name}`);
-
-				// 🛑 STOPPER LE TIMER
-				if (activeTimers.has(oldChannel.id)) {
-					clearInterval(activeTimers.get(oldChannel.id));
-					activeTimers.delete(oldChannel.id);
-					console.log(`🛑 Timer arrêté pour ${oldChannel.name}`);
-				}
-
-				console.log(`🔎 Recherche du nom original pour ID: ${oldChannel.id}`);
-				console.log('📌 Contenu actuel de originalChannelNames :', originalChannelNames);
-
-				// ✅ Récupérer le NOM ORIGINAL STOCKÉ avec l'ID
-				if (originalChannelNames.has(oldChannel.id)) {
-					let originalName = originalChannelNames.get(oldChannel.id);
-					console.log(`✅ Nom original retrouvé : ${originalName} pour ${oldChannel.name}`);
-
-					// 🔍 Extraire le numéro (#1, #2, ...) s'il existe
-					const match = oldChannel.name.match(/#\d+$/);
-					const channelNumber = match ? match[0] : '';
-
-					// 🔄 Réappliquer le numéro s'il existait
-					originalName = `${originalName} ${channelNumber}`.trim();
-
-					await oldChannel.setName(originalName);
-					originalChannelNames.delete(oldChannel.id);
-				}
-				else {
-					console.log(`⚠️ Nom original introuvable pour ${oldChannel.name}. La Map contient actuellement :`, originalChannelNames);
-				}
+				stopTimer(oldChannel);
 			}
 		}, 5000);
 	}
 });
+
 
 client.once(Events.ClientReady, (readyClient) => {
 	console.log(`✅ Bot ready and connected ${readyClient.user.tag}`);
 });
 
 client.login(token);
+
