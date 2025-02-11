@@ -26,18 +26,17 @@ async function runCycle(channel, pomodoroDuration, breakDuration) {
 	while (channel.members.size > 0) {
 		console.log(`🍅 Début du Pomodoro de ${pomodoroDuration / 60} minutes`);
 		await updateChannelName(channel, pomodoroDuration / 60, 'Pomodoro');
-		await countdown(channel, pomodoroDuration, 'Pomodoro');
+		await countdown(channel, pomodoroDuration, 'Pomodoro', pomodoroDuration, breakDuration);
 
 		if (channel.members.size === 0) break;
 
 		console.log(`☕ Début de la pause de ${breakDuration / 60} minutes`);
 		await updateChannelName(channel, breakDuration / 60, 'Pause');
-		await countdown(channel, breakDuration, 'Pause');
+		await countdown(channel, breakDuration, 'Pause', pomodoroDuration, breakDuration);
 
 		if (channel.members.size === 0) break;
 
 		console.log(`✅ Fin du cycle pour ${channel.name}`);
-
 
 		const settings = pomodoroSettings.get(channel.id);
 		if (settings) {
@@ -51,21 +50,38 @@ async function runCycle(channel, pomodoroDuration, breakDuration) {
 	}
 }
 
-async function countdown(channel, duration, phase) {
+async function countdown(channel, duration, phase, pomodoroDuration, breakDuration) {
 	let remainingTime = duration;
+
+	await updateChannelName(channel, Math.floor(remainingTime / 60), phase);
 
 	while (remainingTime > 0 && channel.members.size > 0) {
 		await new Promise(resolve => setTimeout(resolve, 60000));
 		remainingTime -= 60;
 
-		// ✅ Mettre à jour le nom du salon toutes les 5 minutes
-		if (remainingTime % 300 === 0 || remainingTime <= 60) {
-			const minutesLeft = Math.max(0, Math.floor(remainingTime / 60));
-			await updateChannelName(channel, minutesLeft, phase);
+		if (remainingTime > 0 && remainingTime % 300 === 0) {
+			await updateChannelName(channel, Math.floor(remainingTime / 60), phase);
 		}
+
 	}
 
 	console.log(`✅ Fin du cycle ${phase} pour ${channel.name}`);
+
+
+	if (phase === 'Pomodoro') {
+		console.log(`☕ Début de la pause de ${breakDuration / 60} min`);
+
+		await updateChannelName(channel, breakDuration / 60, 'Pause');
+
+		return countdown(channel, breakDuration, 'Pause', pomodoroDuration, breakDuration);
+	}
+	else if (phase === 'Pause') {
+		console.log('🍅 Reprise du Pomodoro après la pause');
+
+		await updateChannelName(channel, pomodoroDuration / 60, 'Pomodoro');
+
+		return countdown(channel, pomodoroDuration, 'Pomodoro', pomodoroDuration, breakDuration);
+	}
 }
 
 async function updateChannelName(channel, timeLeft, phase) {
@@ -85,7 +101,6 @@ async function updateChannelName(channel, timeLeft, phase) {
 		console.error(`❌ Erreur mise à jour du nom pour ${channel.name} :`, error);
 	}
 }
-
 
 export function stopTimer(channel) {
 	if (!channel) {

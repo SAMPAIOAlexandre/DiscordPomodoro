@@ -40,7 +40,6 @@ export default {
 				.filter(channel => channel.parentId === category.id)
 				.size;
 
-			// Create a unique name for the new channel
 			const newChannelName = `Pomodoro ${duration}/${breakDuration} #${existingChannelCount + 1}`;
 
 			for (const [key, value] of originalChannelNames.entries()) {

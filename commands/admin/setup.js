@@ -5,11 +5,10 @@ export default {
 		.setName('setup')
 		.setDescription('Setup the category and voice channel for pomodoro sessions.'),
 	async execute(interaction) {
-		await interaction.deferReply({ ephemeral: true }); // ⚠️ Empêche l'expiration de l'interaction
-
+		await interaction.deferReply({ ephemeral: true }); 
 		try {
 			const guild = interaction.guild;
-			const sessionTypes = ['25/5', '1/1', '50/10', '90/20'];
+			const sessionTypes = ['25/5', '5/5', '50/10', '90/20'];
 
 			for (const type of sessionTypes) {
 				let category = guild.channels.cache.find(
