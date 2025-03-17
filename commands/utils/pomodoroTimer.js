@@ -55,6 +55,11 @@ async function countdown(channel, duration, phase, pomodoroDuration, breakDurati
 
 	await updateChannelName(channel, Math.floor(remainingTime / 60), phase);
 
+	if (channel.members.size === 0) {
+		console.log(`🚫 Salon vide détecté pendant ${phase}, arrêt immédiat.`);
+		stopTimer(channel);
+		return; // 🔴 On stoppe le cycle ici !
+	}
 
 	if (phase === 'Pomodoro') {
 		const midPomodoro = Math.floor(pomodoroDuration / 2); // 50% du temps
@@ -149,13 +154,19 @@ export function stopTimer(channel) {
 			return;
 		}
 
-		updatedChannel.setName(originalName).then(() => {
+		updatedChannel.setName(originalName).then(async () => {
 			console.log(`✅ Nom du salon bien réinitialisé : ${originalName}`);
 			originalChannelNames.delete(channel.id);
 			pomodoroSettings.delete(channel.id);
+
+			// 🔄 **Forcer Discord à rafraîchir le cache du salon après réinitialisation**
+			await new Promise(resolve => setTimeout(resolve, 2000)); // ⏳ Pause 2 sec
+			await updatedChannel.fetch(); // 🚀 Recharge les données du salon
+
 		}).catch(error => {
 			console.error(`❌ Erreur lors du reset du nom pour ${originalName} :`, error);
 		});
+
 	}
 	else {
 		console.log(`⚠️ Aucun nom original trouvé pour ${channel.name}, suppression de la mémoire.`);
