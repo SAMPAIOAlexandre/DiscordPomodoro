@@ -52,29 +52,39 @@ async function runCycle(channel, pomodoroDuration, breakDuration) {
 
 async function countdown(channel, duration, phase, pomodoroDuration, breakDuration) {
 	let remainingTime = duration;
+
 	await updateChannelName(channel, Math.floor(remainingTime / 60), phase);
 
-	// Variables pour éviter les doublons de messages
-	let midReminderSent = false;
-	let nearEndReminderSent = false;
+
+	if (phase === 'Pomodoro') {
+		const midPomodoro = Math.floor(pomodoroDuration / 2); // 50% du temps
+		const nearEnd = Math.max(60, pomodoroDuration - 300); // 5 min avant la fin
+
+		if (!activeReminders.has(channel.id)) {
+			activeReminders.set(channel.id, []);
+		}
+
+
+		setTimeout(() => {
+			if (channel.members.size > 0 && remainingTime > midPomodoro) {
+				channel.send('⏳ Vous êtes à mi-chemin de votre session Pomodoro ! 💪');
+			}
+		}, (pomodoroDuration - midPomodoro) * 1000);
+
+
+		setTimeout(() => {
+			if (channel.members.size > 0 && remainingTime > nearEnd) {
+				channel.send('⚠️ Plus que quelques minutes avant la fin du Pomodoro, finissez votre tâche ! ⏳');
+			}
+		}, (pomodoroDuration - nearEnd) * 1000);
+	}
+
 
 	while (remainingTime > 0 && channel.members.size > 0) {
 		await new Promise(resolve => setTimeout(resolve, 60000));
 		remainingTime -= 60;
 
-		// 📢 Envoi du rappel à mi-chemin
-		if (phase === 'Pomodoro' && !midReminderSent && remainingTime === Math.floor(pomodoroDuration / 2)) {
-			channel.send('⏳ Vous êtes à mi-chemin de votre session Pomodoro ! 💪');
-			midReminderSent = true; // ✅ Éviter les répétitions
-		}
 
-		// 🚨 Envoi du rappel "5 minutes restantes" uniquement si le Pomodoro est assez long
-		if (phase === 'Pomodoro' && !nearEndReminderSent && remainingTime === Math.max(60, pomodoroDuration - 300)) {
-			channel.send('⚠️ Plus que quelques minutes avant la fin du Pomodoro, finissez votre tâche ! ⏳');
-			nearEndReminderSent = true;
-		}
-
-		// ✅ Mise à jour du nom du salon toutes les 5 minutes
 		if (remainingTime > 0 && remainingTime % 300 === 0) {
 			await updateChannelName(channel, Math.floor(remainingTime / 60), phase);
 		}
@@ -82,7 +92,7 @@ async function countdown(channel, duration, phase, pomodoroDuration, breakDurati
 
 	console.log(`✅ Fin du cycle ${phase} pour ${channel.name}`);
 
-	// ✅ Passage immédiat à la phase suivante
+
 	if (phase === 'Pomodoro') {
 		console.log(`☕ Début de la pause de ${breakDuration / 60} min`);
 		await updateChannelName(channel, breakDuration / 60, 'Pause');
