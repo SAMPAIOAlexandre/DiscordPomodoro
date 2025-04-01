@@ -85,6 +85,17 @@ async function countdown(channel, duration, phase, pomodoroDuration, breakDurati
 		}, (pomodoroDuration - nearEnd) * 1000);
 	}
 
+	if (phase === 'Pause') {
+		// 🔔 Rappel à mi-temps de la pause
+		const midBreak = Math.floor(breakDuration / 2);
+
+		setTimeout(() => {
+			if (channel.members.size > 0 && remainingTime > midBreak) {
+				channel.send('🧘‍♂️ Prenez le temps de vous détendre, respirez profondément 🌬️');
+			}
+		}, (breakDuration - midBreak) * 1000);
+	}
+
 
 	while (remainingTime > 0 && channel.members.size > 0) {
 		await new Promise(resolve => setTimeout(resolve, 60000));
